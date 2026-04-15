@@ -4,6 +4,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Set;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,17 +13,22 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -116,4 +122,20 @@ public class SecurityConfig {
             .formLogin(Customizer.withDefaults());
         return http.build();
     }
+
+
+    @Bean
+public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer() {
+    return (context) -> {
+        if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+            context.getClaims().claims((claims) -> {
+                if (context.getPrincipal().getPrincipal() instanceof UserDetails user) {
+                    Set<String> authorities = AuthorityUtils.authorityListToSet(user.getAuthorities());
+                    claims.put("roles", authorities);
+                }
+            });
+        }
+    };
 }
+}
+
