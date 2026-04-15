@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          gateway-app:
+            provider: spring
+            client-id: gateway-app
+            client-secret: secret-gateway
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: read
+        provider:
+          spring:
+            issuer-uri: http://localhost:9000
